@@ -58,14 +58,14 @@ def draw_damage_box(image_path):
     img = cv2.imread(image_path)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # Noise reduction
+    # Reduce noise
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
     # Edge detection
-    edges = cv2.Canny(blurred, 50, 150)
+    edges = cv2.Canny(blurred, 60, 160)
 
-    # Strengthen edges
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    # Strengthen edges slightly
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     edges = cv2.dilate(edges, kernel, iterations=1)
 
     # Find contours
@@ -76,29 +76,34 @@ def draw_damage_box(image_path):
     if not contours:
         return img
 
-    # Filter noise contours
-    image_area = img.shape[0] * img.shape[1]
-    valid_contours = [
-        c for c in contours if cv2.contourArea(c) > 0.01 * image_area
-    ]
+    h, w, _ = img.shape
+    image_area = h * w
+
+    # ✅ Filter contours by realistic damage size
+    valid_contours = []
+    for c in contours:
+        area = cv2.contourArea(c)
+        if 0.01 * image_area < area < 0.35 * image_area:
+            valid_contours.append(c)
 
     if not valid_contours:
         return img
 
-    # Largest contour → damage region
-    largest_contour = max(valid_contours, key=cv2.contourArea)
-    x, y, w, h = cv2.boundingRect(largest_contour)
+    # Choose most prominent damage-like region
+    best_contour = max(valid_contours, key=cv2.contourArea)
+    x, y, bw, bh = cv2.boundingRect(best_contour)
 
-    # Draw GREEN box (no text)
+    # Draw GREEN bounding box
     cv2.rectangle(
         img,
         (x, y),
-        (x + w, y + h),
+        (x + bw, y + bh),
         (0, 255, 0),
         3
     )
 
     return img
+
 
 # --------------------------------------------------
 # Upload Type Selector
@@ -190,3 +195,4 @@ st.markdown(
     "Demo Project | Deep Learning • Computer Vision • Streamlit</p>",
     unsafe_allow_html=True
 )
+

@@ -1,14 +1,89 @@
 import streamlit as st
 from model_helper import predict
 
-st.title("Vehicle Damage Detection")
+# --------------------------------------------------
+# Page configuration
+# --------------------------------------------------
+st.set_page_config(
+    page_title="Vehicle Damage Detection",
+    page_icon="🚗",
+    layout="centered"
+)
 
-uploaded_file = st.file_uploader("Upload the file", type=["jpg", "png"])
+# --------------------------------------------------
+# Header Section
+# --------------------------------------------------
+st.markdown(
+    "<h1 style='text-align: center;'>🚗 Vehicle Damage Detection</h1>",
+    unsafe_allow_html=True
+)
+st.markdown(
+    "<p style='text-align: center; color: gray;'>Upload a vehicle image to detect damage type</p>",
+    unsafe_allow_html=True
+)
 
-if uploaded_file:
-    image_path = "../Train_Streamlit_app/temp_file.jpg"
+st.divider()
+
+# --------------------------------------------------
+# Sidebar (Demo / Info)
+# --------------------------------------------------
+with st.sidebar:
+    st.header("ℹ️ About")
+    st.write(
+        """
+        This application uses a **deep learning model (ResNet-50)**  
+        to classify **vehicle damage types** from images.
+        """
+    )
+    st.markdown("**Classes:**")
+    st.markdown(
+        """
+        - Front Breakage  
+        - Front Crushed  
+        - Front Normal  
+        - Rear Breakage  
+        - Rear Crushed  
+        - Rear Normal  
+        """
+    )
+
+# --------------------------------------------------
+# File Upload Section
+# --------------------------------------------------
+uploaded_file = st.file_uploader(
+    "📤 Upload a vehicle image",
+    type=["jpg", "png", "jpeg"]
+)
+
+if uploaded_file is not None:
+    image_path = "temp_file.jpg"
+
+    # Save uploaded image
     with open(image_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
-        st.image(uploaded_file, caption="Uploaded File", use_container_width=True)
+
+    # Show image in a container
+    st.markdown("### 🖼️ Uploaded Image")
+    st.image(
+        uploaded_file,
+        use_container_width=True
+    )
+
+    # Prediction
+    with st.spinner("🔍 Analyzing image..."):
         prediction = predict(image_path)
-        st.info(f"Predicted Class: {prediction}")
+
+    # Result display
+    st.success(f"✅ **Predicted Damage Class:** {prediction}")
+
+# --------------------------------------------------
+# Footer
+# --------------------------------------------------
+st.divider()
+st.markdown(
+    "<p style='text-align: center; color: gray;'>"
+    "Demo Project | Deep Learning + Streamlit</p>",
+    unsafe_allow_html=True
+)
+
+

@@ -16,19 +16,19 @@ st.markdown("<h1 style='text-align:center;'>🚗 Vehicle Damage Detection</h1>",
 st.markdown("<p style='text-align:center;color:gray;'>Upload a vehicle image or video</p>", unsafe_allow_html=True)
 st.divider()
 
-# ---------------- LOAD CAR DETECTOR (SAFE) ----------------
+# ---------------- LOAD CAR VALIDATOR ----------------
 CASCADE_PATH = "haarcascade_car.xml"
 CAR_CASCADE = cv2.CascadeClassifier(CASCADE_PATH)
 
 if CAR_CASCADE.empty():
-    st.error("❌ Car detector file not found or failed to load.")
+    st.error("❌ Car validation model not found.")
     st.stop()
 
-def detect_car(image_path):
+def is_car_image(image_path):
+    """Returns True if a car is detected, else False"""
     img = cv2.imread(image_path)
-
     if img is None:
-        return None, []
+        return False
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -39,15 +39,15 @@ def detect_car(image_path):
         minSize=(120, 120)
     )
 
-    return img, cars
+    return len(cars) > 0
 
 # ---------------- SIDEBAR ----------------
 with st.sidebar:
     st.header("ℹ️ About")
     st.write("""
-    - Model: **ResNet-50 (Classifier)**
-    - Vehicle detection: **Haar Cascade**
-    - Damage localization: **Car-level only**
+    - **Model:** ResNet-50 (Image Classification)
+    - **Validation:** Car presence check
+    - **Task:** Damage classification only
     """)
     st.success("🟢 System Ready")
 
@@ -58,7 +58,7 @@ upload_type = st.radio("Select input type", ["📷 Image", "🎥 Video"])
 # IMAGE
 # =====================================================
 if upload_type == "📷 Image":
-    uploaded_image = st.file_uploader("Upload image", type=["jpg", "png", "jpeg"])
+    uploaded_image = st.file_uploader("Upload vehicle image", type=["jpg", "png", "jpeg"])
 
     if uploaded_image:
         image_path = "temp_image.jpg"
@@ -67,19 +67,12 @@ if upload_type == "📷 Image":
 
         st.image(uploaded_image, caption="Uploaded Image", use_container_width=True)
 
-        img, cars = detect_car(image_path)
-
-        if img is None or len(cars) == 0:
-            st.error("❌ No vehicle detected. Please upload a clear car image.")
+        # ✅ VALIDATION ONLY
+        if not is_car_image(image_path):
+            st.error("❌ Invalid image. Please upload a vehicle image.")
             os.remove(image_path)
         else:
-            for (x, y, w, h) in cars:
-                cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 3)
-
-            st.markdown("### 📍 Vehicle Detection")
-            st.image(img, channels="BGR", use_container_width=True)
-
-            with st.spinner("🔍 Classifying damage..."):
+            with st.spinner("🔍 Analyzing damage..."):
                 prediction = predict(image_path)
 
             st.success(f"✅ **Predicted Damage Class:** {prediction}")
@@ -89,7 +82,7 @@ if upload_type == "📷 Image":
 # VIDEO
 # =====================================================
 if upload_type == "🎥 Video":
-    uploaded_video = st.file_uploader("Upload video", type=["mp4", "avi", "mov"])
+    uploaded_video = st.file_uploader("Upload vehicle video", type=["mp4", "avi", "mov"])
 
     if uploaded_video:
         st.video(uploaded_video)
@@ -107,17 +100,12 @@ if upload_type == "🎥 Video":
             frame_path = "temp_frame.jpg"
             cv2.imwrite(frame_path, frame)
 
-            img, cars = detect_car(frame_path)
-
-            if img is None or len(cars) == 0:
+            if not is_car_image(frame_path):
                 st.error("❌ No vehicle detected in video.")
             else:
-                for (x, y, w, h) in cars:
-                    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 3)
+                with st.spinner("🔍 Analyzing damage..."):
+                    prediction = predict(frame_path)
 
-                st.image(img, channels="BGR", caption="Detected Vehicle")
-
-                prediction = predict(frame_path)
                 st.success(f"✅ **Predicted Damage Class:** {prediction}")
 
             os.remove(frame_path)
@@ -130,6 +118,8 @@ st.markdown(
     "<p style='text-align:center;color:gray;'>Deep Learning • Computer Vision • Streamlit</p>",
     unsafe_allow_html=True
 )
+
+
 
 
 

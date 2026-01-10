@@ -131,9 +131,10 @@ if upload_type == "🎥 Video":
 st.divider()
 st.markdown(
     "<p style='text-align: center; color: gray;'>"
-    "Demo Project | Deep Learning • Computer Vision • Streamlit</p>",
+    "Deep Learning Project  |  Streamlit</p>",
     unsafe_allow_html=True
 )
+
 
 
 
